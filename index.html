@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyCharge - Integrated System</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Map must have explicit height */
+        #map { height: 100%; width: 100%; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* Login Background */
+        .login-bg {
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+        }
+
+        /* Toggle Switch Animation */
+        .toggle-checkbox:checked {
+            transform: translateX(100%);
+            border-color: #10b981;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #10b981;
+        }
+        .toggle-checkbox {
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .admin-table th { text-transform: uppercase; font-size: 0.75rem; color: #64748b; font-weight: 700; padding: 0.75rem 1rem; text-align: left; }
+        .admin-table td { padding: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.875rem; color: #1e293b; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+
+    <!-- ================= VIEW 1: LOGIN ================= -->
+    <section id="login-view" class="h-full w-full flex items-center justify-center login-bg absolute inset-0 z-50">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        
+        <div class="bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10">
+            <div class="text-center mb-8">
+                <div class="bg-blue-600 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/50">
+                    <i class="fa-solid fa-bolt text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-white tracking-tight">SkyCharge</h1>
+                <p class="text-blue-200 text-sm mt-1">Authorized Access Only</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-blue-200 uppercase mb-2">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3 top-3.5 text-slate-400"></i>
+                        <input type="email" id="email" required class="w-full bg-slate-800/50 border border-slate-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block pl-10 p-3 placeholder-slate-500" placeholder="operator@skycharge.io" value="user@gmail.com">
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-1">Try: user@gmail.com or admin@gmail.com</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-200 uppercase mb-2">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400"></i>
+                        <input type="password" id="password" required class="w-full bg-slate-800/50 border border-slate-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block pl-10 p-3 placeholder-slate-500" placeholder="••••••••" value="user123">
+                    </div>
+                </div>
+                <div id="login-error" class="hidden bg-red-500/10 border border-red-500/50 text-red-200 text-xs p-3 rounded text-center">Invalid credentials.</div>
+                <button type="submit" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-bold rounded-lg text-sm px-5 py-3 text-center transition-all shadow-lg shadow-blue-900/50">Initialize Session <i class="fa-solid fa-arrow-right ml-2"></i></button>
+            </form>
+            <div class="mt-6 text-center"><p class="text-slate-400 text-xs">Protected by SkyCharge Security Protocol v2.4</p></div>
+        </div>
+    </section>
+
+    <!-- ================= VIEW 2: USER DASHBOARD ================= -->
+    <section id="user-view" class="hidden h-full flex flex-col absolute inset-0 z-40 bg-gray-100">
+        <nav class="bg-white shadow-md z-20 h-16 flex-none px-6 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg"><i class="fa-solid fa-bolt"></i></div>
+                <h1 class="text-2xl font-bold text-gray-800 tracking-tight">SkyCharge</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="hidden md:flex flex-col items-end">
+                    <span class="text-xs text-gray-500 uppercase font-semibold tracking-wider">Unique ID</span>
+                    <span id="unique-code" class="font-mono text-lg font-bold text-blue-600">------</span>
+                </div>
+                <div class="flex items-center gap-3 pl-6 border-l border-gray-200">
+                    <button onclick="logout()" class="text-sm font-semibold text-red-500 hover:text-red-700">Logout</button>
+                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 border-2 border-white shadow-sm overflow-hidden"><i class="fa-solid fa-user"></i></div>
+                </div>
+            </div>
+        </nav>
+        <div class="flex flex-1 h-full overflow-hidden relative flex-col md:flex-row">
+            <div class="flex-1 relative bg-gray-200 h-[60%] md:h-full">
+                <!-- Map Container -->
+                <div id="map"></div>
+                
+                <div class="absolute top-4 right-4 z-[100] bg-white p-2 rounded-md shadow-lg border border-gray-200">
+                    <button onclick="resetMap()" class="p-2 hover:bg-gray-100 rounded text-gray-600" title="Reset View"><i class="fa-solid fa-location-crosshairs"></i></button>
+                </div>
+            </div>
+            <aside class="w-full md:w-96 bg-white shadow-xl z-10 flex flex-col h-[40%] md:h-full border-l border-gray-200">
+                <div class="p-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h2 class="font-semibold text-gray-800"><i class="fa-solid fa-plane-up mr-2 text-blue-500"></i>Drone Telemetry</h2>
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Connected</span>
+                </div>
+                <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><p class="text-xs text-gray-500 uppercase font-bold">Drone Name</p><p class="text-lg font-semibold text-gray-800">Falcon-X1</p></div>
+                            <div><p class="text-xs text-gray-500 uppercase font-bold">Drone ID</p><p class="text-sm font-mono text-gray-600 bg-gray-100 inline-block px-2 py-1 rounded mt-1">DRN-8829</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 rounded-xl border border-blue-100 p-4 relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 text-blue-100 text-6xl"><i class="fa-solid fa-charging-station"></i></div>
+                        <div class="relative z-10">
+                            <div class="mb-4">
+                                <p class="text-xs text-blue-600 uppercase font-bold mb-1">On Pad</p>
+                                <div class="flex items-center gap-2"><span id="on-pad-badge" class="text-xl font-bold text-gray-800">NO</span><span id="pad-indicator" class="h-3 w-3 rounded-full bg-gray-300"></span></div>
+                            </div>
+                            <div><p class="text-xs text-blue-600 uppercase font-bold mb-1">Charging Status</p><p id="charging-status-text" class="text-md font-medium text-gray-600">Searching for pad...</p></div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-end mb-2"><p class="text-sm font-medium text-gray-600">Battery Level</p><p id="battery-percentage" class="text-2xl font-bold text-gray-800">32%</p></div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden"><div id="battery-bar" class="bg-yellow-500 h-2.5 rounded-full transition-all duration-1000" style="width: 32%"></div></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-gray-50 p-3 rounded-lg text-center"><i class="fa-solid fa-bolt text-yellow-500 mb-1"></i><p class="text-xs text-gray-500">Voltage</p><p id="voltage-val" class="font-mono font-bold text-gray-700">22.4 V</p></div>
+                            <div class="bg-gray-50 p-3 rounded-lg text-center"><i class="fa-regular fa-clock text-blue-500 mb-1"></i><p class="text-xs text-gray-500">Duration</p><p id="charge-duration" class="font-mono font-bold text-gray-700">00:00</p></div>
+                        </div>
+                    </div>
+                    <div id="action-area" class="hidden bg-green-50 border border-green-200 rounded-lg p-4 text-center animate-pulse"><p class="text-green-800 text-sm font-semibold">Charge in progress...</p></div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <!-- ================= VIEW 3: ADMIN DASHBOARD ================= -->
+    <section id="admin-view" class="hidden h-full flex flex-col absolute inset-0 z-40 bg-slate-50">
+        <nav class="bg-slate-900 shadow-lg z-20 h-16 flex-none px-6 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-600 text-white p-2 rounded-lg"><i class="fa-solid fa-shield-halved"></i></div>
+                <div><h1 class="text-xl font-bold tracking-tight">SkyCharge Admin</h1><p class="text-[10px] text-red-400 uppercase font-bold tracking-widest">Master Control</p></div>
+            </div>
+            <div class="flex items-center gap-4"><span class="text-xs text-slate-400">admin@gmail.com</span><button onclick="logout()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs font-bold transition">LOGOUT</button></div>
+        </nav>
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Active Fleet Status</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl"><i class="fa-solid fa-plane"></i></div>
+                            <div><p class="text-2xl font-bold text-slate-800">Falcon-X1</p><p class="text-sm text-green-600 font-bold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> ONLINE</p></div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-sm"><div class="flex justify-between"><span>Battery:</span> <span class="font-mono font-bold">32%</span></div><div class="flex justify-between"><span>Signal:</span> <span class="font-mono font-bold text-green-600">-42dBm</span></div></div>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700 text-white">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Master Override Terminal</h3>
+                        <div class="flex items-center justify-between">
+                            <div><p class="font-bold text-lg">System Power</p><p id="terminal-status" class="text-xs text-red-400">TERMINAL LOCKED</p></div>
+                            <div class="relative w-14 h-8">
+                                <input type="checkbox" id="terminal-toggle" class="toggle-checkbox absolute block w-8 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-600 left-0 z-10" onclick="toggleTerminal()"/>
+                                <label for="terminal-toggle" class="toggle-label block overflow-hidden h-8 rounded-full bg-slate-600 cursor-pointer"></label>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-4">Warning: Toggling this forces a system-wide reset of all charging pads.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                         <h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Total Energy Dispensed</h3>
+                         <div class="flex items-end gap-2"><span class="text-4xl font-bold text-slate-800">4,281</span><span class="text-lg text-slate-500 mb-1">kWh</span></div>
+                         <div class="w-full bg-slate-100 h-2 rounded-full mt-4"><div class="bg-blue-600 h-2 rounded-full" style="width: 75%"></div></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800">Charging History Log</h3><button class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded text-slate-600 font-bold">Export CSV</button></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full admin-table">
+                            <thead class="bg-slate-50"><tr><th>Timestamp</th><th>Drone ID</th><th>Pad Location</th><th>Duration</th><th>Energy</th><th>Status</th></tr></thead>
+                            <tbody id="history-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAas2qXL1S-vIe8sk6Eqnd1BwMDdn7ApwA&callback=initMap&v=weekly" defer></script>
+
+    <script>
+        // --- DATA SIMULATION ---
+        const usersDB = [
+            { email: 'admin@gmail.com', password: 'admin123', role: 'admin' },
+            { email: 'user@gmail.com', password: 'user123', role: 'user' }
+        ];
+        const historyDB = [
+            { time: '2023-10-24 09:15', drone: 'DRN-8829', pad: 'VTU Main Station', duration: '45m', energy: '120 Wh', status: 'Completed' },
+            { time: '2023-10-24 14:30', drone: 'DRN-8829', pad: 'VTU Main Station', duration: '12m', energy: '35 Wh', status: 'Aborted' },
+            { time: '2023-10-23 18:00', drone: 'DRN-9910', pad: 'Belagavi North', duration: '55m', energy: '150 Wh', status: 'Completed' },
+            { time: '2023-10-23 11:20', drone: 'DRN-8829', pad: 'VTU Main Station', duration: '40m', energy: '110 Wh', status: 'Completed' }
+        ];
+        const chargingPad = {
+            id: 'PAD-VTI-01',
+            name: 'VTU Main Charging Station',
+            lat: 15.8220745,
+            lng: 74.4890696,
+            address: 'Belagavi, Karnataka',
+            voltage: '48V'
+        };
+
+        // --- AUTH & NAVIGATION ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const emailIn = document.getElementById('email').value;
+            const passIn = document.getElementById('password').value;
+            const user = usersDB.find(u => u.email === emailIn && u.password === passIn);
+
+            if (user) {
+                document.getElementById('login-error').classList.add('hidden');
+                document.getElementById('login-view').classList.add('hidden');
+                
+                if (user.role === 'admin') {
+                    document.getElementById('admin-view').classList.remove('hidden');
+                    loadAdminData();
+                    initTerminalState();
+                } else {
+                    document.getElementById('user-view').classList.remove('hidden');
+                    // Initialize Map ONLY after showing the view
+                    if(!map) initMap(); 
+                    else {
+                        google.maps.event.trigger(map, 'resize');
+                        map.setCenter({ lat: chargingPad.lat, lng: chargingPad.lng });
+                    }
+                    generateUniqueCode();
+                }
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            document.getElementById('user-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // --- ADMIN LOGIC ---
+        function loadAdminData() {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+            historyDB.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="font-mono text-slate-500">${row.time}</td><td class="font-bold">${row.drone}</td><td>${row.pad}</td><td>${row.duration}</td><td>${row.energy}</td><td><span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${row.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${row.status}</span></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function initTerminalState() {
+            const isOnline = localStorage.getItem('skyCharge_systemOnline') === 'true';
+            document.getElementById('terminal-toggle').checked = isOnline;
+            updateTerminalUI(isOnline);
+        }
+
+        function toggleTerminal() {
+            const isOnline = document.getElementById('terminal-toggle').checked;
+            localStorage.setItem('skyCharge_systemOnline', isOnline);
+            updateTerminalUI(isOnline);
+        }
+
+        function updateTerminalUI(isOnline) {
+            const status = document.getElementById('terminal-status');
+            if (isOnline) {
+                status.innerText = "TERMINAL ACTIVE - ROOT ACCESS";
+                status.className = "text-xs text-green-400 animate-pulse";
+            } else {
+                status.innerText = "TERMINAL LOCKED";
+                status.className = "text-xs text-red-400";
+            }
+        }
+
+        // --- USER/MAP LOGIC ---
+        let map, infoWindow;
+        let isCharging = false, chargingInterval, durationInterval;
+        let currentBattery = 32, secondsCharged = 0;
+
+        function generateUniqueCode() {
+            document.getElementById('unique-code').innerText = Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function getPadContent() {
+            const isOnline = localStorage.getItem('skyCharge_systemOnline') === 'true';
+            
+            if (isOnline) {
+                return `
+                <div class="p-4 bg-white font-sans w-64">
+                    <div class="border-b border-gray-100 pb-2 mb-3"><h3 class="font-bold text-gray-800 text-lg leading-tight">${chargingPad.name}</h3><p class="text-xs text-gray-500 mt-1">${chargingPad.address}</p></div>
+                    <div class="flex items-center justify-between bg-blue-50 p-2 rounded mb-3"><span class="text-xs font-semibold text-blue-700">Available Slots</span><span class="text-xs font-bold text-white bg-green-500 px-2 py-0.5 rounded-full">YES</span></div>
+                    <p class="text-xs font-mono bg-gray-100 rounded p-1 mb-3 text-center">Output: ${chargingPad.voltage}</p>
+                    <button onclick="bookPad('${chargingPad.id}', '${chargingPad.voltage}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition-colors shadow-md transform active:scale-95">Book Now</button>
+                </div>`;
+            } else {
+                return `
+                <div class="p-4 bg-white font-sans w-64 opacity-90">
+                    <div class="border-b border-red-100 pb-2 mb-3"><h3 class="font-bold text-gray-500 text-lg leading-tight">${chargingPad.name}</h3><p class="text-xs text-red-500 mt-1 font-bold uppercase"><i class="fa-solid fa-lock"></i> Station Locked</p></div>
+                    <div class="flex items-center justify-between bg-red-50 p-2 rounded mb-3"><span class="text-xs font-semibold text-red-700">Status</span><span class="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">UNAVAILABLE</span></div>
+                    <p class="text-xs font-mono bg-gray-100 rounded p-1 mb-3 text-center text-gray-400">Output: Offline</p>
+                    <button disabled class="w-full bg-gray-300 text-gray-500 cursor-not-allowed text-sm font-bold py-2.5 px-4 rounded-lg shadow-none">System Offline</button>
+                </div>`;
+            }
+        }
+
+        function initMap() {
+            if(!document.getElementById("map")) return;
+            const padLocation = { lat: chargingPad.lat, lng: chargingPad.lng };
+            map = new google.maps.Map(document.getElementById("map"), { zoom: 17, center: padLocation, mapTypeId: 'hybrid', disableDefaultUI: false, zoomControl: true });
+            infoWindow = new google.maps.InfoWindow();
+            const marker = new google.maps.Marker({ position: padLocation, map: map, title: chargingPad.name, animation: google.maps.Animation.DROP });
+
+            marker.addListener("click", () => {
+                infoWindow.setContent(getPadContent());
+                infoWindow.open({ anchor: marker, map });
+            });
+            // Auto open for demo
+            setTimeout(() => { infoWindow.setContent(getPadContent()); infoWindow.open({ anchor: marker, map }); }, 1500);
+        }
+
+        window.resetMap = function() { 
+            if (map) { 
+                map.setCenter({ lat: chargingPad.lat, lng: chargingPad.lng }); 
+                map.setZoom(17); 
+                google.maps.event.trigger(map, 'resize');
+            } 
+        }
+
+        window.bookPad = function(padId, voltage) {
+            const isOnline = localStorage.getItem('skyCharge_systemOnline') === 'true';
+            if (isCharging) { alert("Already charging!"); return; }
+            if (!isOnline) { alert("System Offline"); return; }
+            if(infoWindow) infoWindow.close();
+            
+            document.getElementById('on-pad-badge').innerText = "YES";
+            document.getElementById('on-pad-badge').classList.replace("text-gray-800", "text-green-600");
+            document.getElementById('pad-indicator').classList.add('bg-green-500', 'animate-ping');
+            document.getElementById('pad-indicator').classList.remove('bg-gray-300');
+            document.getElementById('charging-status-text').innerText = `Locked: ${padId}`;
+            document.getElementById('charging-status-text').classList.add('text-blue-600');
+            document.getElementById('action-area').classList.remove('hidden');
+
+            isCharging = true;
+            secondsCharged = 0;
+            const baseVoltage = parseFloat(voltage);
+            
+            durationInterval = setInterval(() => {
+                secondsCharged++;
+                const mins = Math.floor(secondsCharged / 60).toString().padStart(2, '0');
+                const secs = (secondsCharged % 60).toString().padStart(2, '0');
+                document.getElementById('charge-duration').innerText = `${mins}:${secs}`;
+                const rnd = (Math.random() * 0.4) - 0.2;
+                document.getElementById('voltage-val').innerText = (baseVoltage + rnd).toFixed(1) + " V";
+            }, 1000);
+
+            chargingInterval = setInterval(() => {
+                if (currentBattery >= 100) {
+                    clearInterval(chargingInterval); clearInterval(durationInterval);
+                    document.getElementById('charging-status-text').innerText = "Charging Complete";
+                    document.getElementById('action-area').innerHTML = '<p class="text-green-800 font-bold">Ready for Takeoff</p>';
+                    isCharging = false; return;
+                }
+                currentBattery++;
+                const batBar = document.getElementById('battery-bar');
+                document.getElementById('battery-percentage').innerText = currentBattery + "%";
+                batBar.style.width = currentBattery + "%";
+                if (currentBattery < 50) batBar.classList.add('bg-yellow-500'); else batBar.classList.add('bg-green-500');
+            }, 800);
+        }
+    </script>
+</body>
+</html>
